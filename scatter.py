@@ -19,6 +19,7 @@ from pa import normal_form
 from pa import mag
 from pa import par_diag
 
+
 def fit_ellipse(x, y):
 
     points = [(i, j) for i, j in zip(x, y)]
@@ -32,14 +33,20 @@ def fit_ellipse(x, y):
 
     npar = par_diag(v.flatten(), pl, pa) 
     nform = normal_form(v.flatten(), pl, pa) 
-    print v.flatten()
-    print npar
-    print nform
+    # print v.flatten()
+    # print npar
+    # print nform
 
+    xnform, ynform = ellipse(npar)
+    x2, y2 = ellipse(np.array([nform[0], nform[1], 0.0, 0.0, 0.0, nform[2]]))
+        
+    
     fig = figure(1)
     ax = fig.add_subplot(111, aspect='equal') 
-    ax.plot(x, y, 'bo')
+#    ax.plot(x, y, 'bo')
     ax.plot(xf, yf, '-r', lw=2)
+    ax.plot(xnform, ynform, '-g', lw=2)
+    ax.plot(x2, y2, '-y', lw=2)
     ax.axhline(y=0.0, color='k')
     ax.axvline(x=0.0, color='k')
     
@@ -70,7 +77,7 @@ if __name__ == '__main__':
 
     sens = 1.0
     nmeas = 1000
-    err = randn(nmeas)*0.6
+    err = randn(nmeas)*0.1
     phi = np.linspace(0, 2*np.pi, nmeas)  # angles of the channels
 
     # first line of data is the inital postion
@@ -78,10 +85,10 @@ if __name__ == '__main__':
     # y = data[1:,0] - data[0,0]
     # x = data[1:,1] - data[0,1]
 
-    r0 = ellipse_polar(phi, 170, rand(), rand()*np.pi)
+    r0 = ellipse_polar(phi, 4, rand(), rand()*np.pi)
     x, y = pol2cat(r0+err, phi, deg=False)
     
-    fit_ellipse(x, y)
+    fit_ellipse(x+1.5, y)
     
     show()
   

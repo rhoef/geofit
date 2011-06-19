@@ -12,22 +12,29 @@ def matA(par):
 def par_diag(par, val, vec):
     
     npar = np.append(val, 0.0,)
-    npar = np.append(npar, par[3:5]*vec.T )
-    npar = np.append(npar, par[-1]) 
+    npar = np.append(npar, par[3:5].T*vec )
+    npar = np.append(npar, par[-1])
 
     return npar
 
 def normal_form(opar, val, vec):
+    
+    A = matA(opar)
+    b = np.matrix(opar[3:5]).T
+    t = (-1./2.*b.T*A.I).T
+    c = t.T*A*t + b.T*t + opar[-1]
 
-    par = par_diag(opar, val, vec)
-    c0 = par[-1] - par[3]**2/(2*par[0])**2 - par[4]**2/(2*par[1])**2
-    print np.array([np.sqrt(abs(1/par[0])), np.sqrt(abs(1/par[1])), c0])
-    return np.array([np.sqrt(abs(c0/par[0])), np.sqrt(abs(c0/par[1])), c0])
+    print 't =', t
+    print 'c =', c
+#    import pdb; pdb.set_trace()
 
-
+#    par = par_diag(opar, val, vec)
+#    c0 = par[-1] - (par[3]/par[0])**2/4. - (par[4]/par[1])**2/4.
+#    return np.array([par[0], par[1], c])
+    return np.append(val, c)
 
 def onb(par):
-    
+
     A = matA(par)
     val, vec = la.eig(A)
     D = vec*A*vec.T
@@ -88,7 +95,7 @@ def scatter_matrix(points):
     
     DM = np.array([])
     for (x, y) in points:
-        DM = np.append(DM, np.array([x**2, y**2, 2*x*y, x, y, 1]))
+        DM = np.append(DM, np.array([x**2, y**2, 2.*x*y, x, y, 1.]))
 #        DM = np.append(DM, np.array([x**2, y**2, x*y, x, y, 1]))
     DM = np.matrix(DM.reshape(-1, 6))
         
