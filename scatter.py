@@ -9,44 +9,22 @@ from pdb import set_trace
 from numpy import linalg as LA
 from matplotlib.patches import Circle
 
-from pa import onb
-from pa import ellipse
-from pa import scatter_matrix
+from pa import Ellipse
 from pa import ellipse_polar
 from pa import pol2cat
-from pa import lambda_min
-from pa import normal_form
-from pa import mag
-from pa import par_diag
 
 
 def fit_ellipse(x, y):
 
-    points = [(i, j) for i, j in zip(x, y)]
-    S = scatter_matrix(points)
-    DM = S.T*S
-    w, v = LA.eig(DM)
-    w, v = lambda_min(w, v)
+    el  = Ellipse(x, y)
+    xf, yf = el.ellipse(rawfit=True)
+    x2, y2  = el.ellipse(rawfit=False)
 
-    xf, yf = ellipse(v.flatten())
-    pa, pl, D = onb(v.flatten())
-
-    npar = par_diag(v.flatten(), pl, pa) 
-    nform = normal_form(v.flatten(), pl, pa) 
-    # print v.flatten()
-    # print npar
-    # print nform
-
-    xnform, ynform = ellipse(npar)
-    x2, y2 = ellipse(np.array([nform[0], nform[1], 0.0, 0.0, 0.0, nform[2]]))
-        
-    
     fig = figure(1)
     ax = fig.add_subplot(111, aspect='equal') 
-#    ax.plot(x, y, 'bo')
+    ax.plot(x, y, 'bo')
     ax.plot(xf, yf, '-r', lw=2)
-    ax.plot(xnform, ynform, '-g', lw=2)
-    ax.plot(x2, y2, '-y', lw=2)
+    ax.plot(x2, y2, '-y')
     ax.axhline(y=0.0, color='k')
     ax.axvline(x=0.0, color='k')
     
@@ -56,39 +34,35 @@ def fit_ellipse(x, y):
     r = np.sqrt((x*x + y*y))
     sc = r.mean()*1.3
         
-    # gca().add_patch(Circle((0,0), r.mean(), fill=False, color='b', lw=1))
-    ax.plot(np.array([-1*pa[0,0], pa[0,0]])*sc, np.array([-1*pa[1,0], pa[1,0]])*sc, 
-            '-k', lw=2, ls='--')
-    ax.plot(np.array([-1*pa[0,1], pa[0,1]])*sc, np.array([-1*pa[1,1], pa[1,1]])*sc, 
-            '-k', lw=2, ls='--')
+    px, py = el.paxes()
+    ax.plot( px[0], py[0], '-r', ls='--')
+    ax.plot( px[1], py[1], '-k', ls='--')
 
     if abs(xlim[0]- xlim[1]) > abs(ylim[0]-ylim[1]):
         ax.set_ylim(xlim)
     else:
         ax.set_xlim(ylim)
-
         
     ax.set_title('Deviation')
-    draw()
        
     show()
       
+
 if __name__ == '__main__':
 
-    sens = 1.0
-    nmeas = 1000
-    err = randn(nmeas)*0.1
-    phi = np.linspace(0, 2*np.pi, nmeas)  # angles of the channels
+  sens = 1.0
+  nmeas = 10
+  err = randn(nmeas)*0.1
+  phi = np.linspace(0, 2*np.pi, nmeas)  # angles of the channels
+  r0 = ellipse_polar(phi, 4, rand(), rand()*np.pi)
+  x, y = pol2cat(phi, r0+err, deg=False)
 
-    # first line of data is the inital postion
-    # data = np.loadtxt('dipoletest.csv', delimiter=',')
-    # y = data[1:,0] - data[0,0]
-    # x = data[1:,1] - data[0,1]
+    # data= np.loadtxt('dipoletest.csv', delimiter=',')
+    # x = data[1:,0] - data[0,0]
+    # y = data[1:,1] - data[0,1]
 
-    r0 = ellipse_polar(phi, 4, rand(), rand()*np.pi)
-    x, y = pol2cat(r0+err, phi, deg=False)
     
-    fit_ellipse(x+1.5, y)
+  fit_ellipse(x, y)
     
-    show()
+  show()
   
