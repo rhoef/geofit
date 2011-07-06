@@ -2,6 +2,8 @@
 import numpy as np
 import numpy.linalg as la
 from collections import namedtuple
+from matplotlib import patches
+from matplotlib import lines
 
 FIELDS = ['xraw', 'yraw', 'a', 'b',
           'eps', 'center', 'nform',
@@ -9,6 +11,39 @@ FIELDS = ['xraw', 'yraw', 'a', 'b',
 
 FNAN = len(FIELDS)*[None]
 
+
+class EllipsePatch(patches.Ellipse):
+
+    def __init__(self, xy, width, height, angle=0.0, **kwargs):
+        
+        if width < height:
+            width, height = height, width
+
+        super(EllipsePatch, self).__init__(xy, width, height, angle, **kwargs)
+
+        self.angle = angle
+        self.width = width
+        self.height = height
+        self.center = xy
+
+    def paxes(self, *args, **kwargs): 
+
+        px = np.array((self.width, 0))
+        py = np.array((0, self.height))
+        phi = np.radians(self.angle)
+        cx, cy = self.center
+        
+        px = px*np.cos(phi) - py*np.sin(phi) 
+        py = px*np.sin(phi) + py*np.cos(phi)
+        
+        xline = lines.Line2D( (-px*np.cos(phi)+cx, px*np.cos(phi)+cx),
+                              (-px*np.sin(phi)+cy, px*np.sin(phi)+cy), *args, **kwargs)
+        
+        yline = lines.Line2D( (-py*np.sin(phi)+cx, py*np.sin(phi)+cx),
+                              (py*np.cos(phi)+cy, -py*np.cos(phi)+cy), *args, **kwargs)
+        
+        return xline, yline
+        
 
 class Ellipse(object):
 
@@ -25,6 +60,14 @@ class Ellipse(object):
         # TODO - use property decorator
         self.normal_form()
         self.params()
+
+
+    def __getattr__(self, attr):
+        
+        if hasattr(self.fdata, attr) and not attr.startswith('_'):
+            return getattr(self.fdata, attr)
+        else:
+            return getattr(self, attr)
 
     def _fit_algebraic(self):
         """Returns the design matrix for an algebraic fit of an ellipsis
@@ -101,26 +144,6 @@ class Ellipse(object):
         self.fdata.b = b
         self.fdata.eps = eps
         self.fdata.phi0 = phi0
-
-
-    def ellipse(self, n=300, rawfit=False):    
-
-        phi = np.linspace(0, 2*np.pi, n)
-
-        if self.fdata.a > self.fdata.b:
-            p = self.fdata.b
-        else:
-            p = self.fdata.a
-            
-        rad = p/np.sqrt(1-(self.fdata.eps*np.cos(phi))**2)
-        x, y = pol2cat(phi, rad, deg=False)
-
-        if rawfit:
-            x, y = rotate(x, y, self.fdata.phi0)
-            x += self.fdata.center[0]
-            y += self.fdata.center[1]
-            
-        return x, y
 
 
 def rotate(x, y, phi):
