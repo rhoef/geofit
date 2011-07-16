@@ -28,8 +28,8 @@ def fit_ellipse(x, y):
     print 'b:', el.b
     print 'Excentricity:', el.eps
 
-
     fig = figure(1)
+
     ax = fig.add_subplot(111, aspect='equal') 
     ax.plot(x, y, 'bo')
     ax.axhline(y=0.0, color='k')
@@ -41,31 +41,31 @@ def fit_ellipse(x, y):
     xline, yline = el_raw.paxes(ls='--', color='k')
     ax.add_artist(xline)
     ax.add_artist(yline)
-
     
     lmax = max(list(ax.get_xlim())+list(ax.get_ylim()))
     ax.set_ylim((-lmax, lmax))
     ax.set_xlim(ax.get_ylim())
     ax.set_title('Deviation')
-       
-    show()
-      
+
+    fig.text(0.05, 0.40, el_raw.text(), fontsize=11)
+
+    draw()
 
 if __name__ == '__main__':
 
   # sens = 1.0
-  # nmeas = 100
+  # nmeas = 1e4
   # err = randn(nmeas)*0.1
   # phi = np.linspace(0, 2*np.pi, nmeas)  # angles of the channels
   # r0 = ellipse_polar(phi, 4, rand(), rand()*np.pi)
   # x, y = pol2cat(phi, r0+err, deg=False)
 
-    data= np.loadtxt('dipoletest.csv', delimiter=',')
-    x = data[1:,0] - data[0,0]
-    y = data[1:,1] - data[0,1]
+  data= np.loadtxt('dipoletest.csv', delimiter=',')
+  x = data[1:,0] - data[0,0]
+  y = data[1:,1] - data[0,1]
     
     
-    fit_ellipse(x+1, y+2)
+  fit_ellipse(x, y)
     
-    show()
+  show()
   

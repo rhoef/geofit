@@ -4,6 +4,7 @@ import numpy.linalg as la
 from collections import namedtuple
 from matplotlib import patches
 from matplotlib import lines
+from matplotlib.pyplot import arrow
 
 FIELDS = ['xraw', 'yraw', 'a', 'b',
           'eps', 'center', 'nform',
@@ -32,10 +33,7 @@ class EllipsePatch(patches.Ellipse):
         py = np.array((0, self.height))
         phi = np.radians(self.angle)
         cx, cy = self.center
-        
-#        px = px*np.cos(phi) - py*np.sin(phi) 
-#        py = px*np.sin(phi) + py*np.cos(phi)
-        
+                
         xline = lines.Line2D( (-px*np.cos(phi)+cx, px*np.cos(phi)+cx),
                               (-px*np.sin(phi)+cy, px*np.sin(phi)+cy), *args, **kwargs)
         
@@ -44,6 +42,27 @@ class EllipsePatch(patches.Ellipse):
         
         return xline, yline
         
+    def text(self):
+            
+        txt = 'Parameters:\n'
+        txt += 'cx: %.3f\n' %self.center[0]
+        txt += 'cy: %.3f\n' %self.center[1]
+        txt += 'a: %.3f\n' %(self.width/2.0)
+        txt += 'b: %.3f\n' %(self.height/2.0)
+        txt += 'eps: %.3f' %self.eps
+
+        return txt
+
+    @property
+    def eps(self):
+
+        if self.width < self.height:
+            eps = np.sqrt(1- self.width**2/self.height**2)
+        else:
+            eps = np.sqrt(1- self.height**2/self.width**2)
+
+        return eps
+
 
 class Ellipse(object):
 
@@ -58,8 +77,8 @@ class Ellipse(object):
         self.fdata.paxes = w
 
         # TODO - use property decorator
-        self.normal_form()
-        self.params()
+        self._normal_form()
+        self._params()
 
 
     def __getattr__(self, attr):
@@ -92,7 +111,7 @@ class Ellipse(object):
         
         return np.array(w[ind]), np.array( v[:, ind])   
 
-    def normal_form(self):
+    def _normal_form(self):
           
         par = self.fdata.popt
         A = np.matrix([[par[0], par[2]], [par[2], par[1]]])
@@ -125,7 +144,7 @@ class Ellipse(object):
         return px*scale+c[0], py*scale+c[1]
 
 
-    def params(self):
+    def _params(self):
         
         nform = self.fdata.nform
         pa = self.fdata.paxes
