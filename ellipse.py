@@ -5,6 +5,7 @@ from collections import namedtuple
 from matplotlib import patches
 from matplotlib import lines
 from matplotlib.pyplot import arrow
+from scipy.optimize import leastsq
 
 FIELDS = ['xraw', 'yraw', 'a', 'b',
           'eps', 'center', 'nform',
@@ -29,16 +30,16 @@ class EllipsePatch(patches.Ellipse):
 
     def paxes(self, *args, **kwargs): 
 
-        px = np.array((self.width, 0))
-        py = np.array((0, self.height))
-        phi = np.radians(self.angle)
-        cx, cy = self.center
-                
-        xline = lines.Line2D( (-px*np.cos(phi)+cx, px*np.cos(phi)+cx),
-                              (-px*np.sin(phi)+cy, px*np.sin(phi)+cy), *args, **kwargs)
+        cx, cy = self.center                
+        sc = (self.width + self.height)*0.5
+        ssin = np.sin(np.radians(self.angle))*sc
+        scos = np.cos(np.radians(self.angle))*sc
+
+        xline = lines.Line2D( (-scos+cx, scos+cx),
+                              (-ssin+cy, ssin+cy), *args, **kwargs)
         
-        yline = lines.Line2D( (-py*np.sin(phi)+cx, py*np.sin(phi)+cx),
-                              (py*np.cos(phi)+cy, -py*np.cos(phi)+cy), *args, **kwargs)
+        yline = lines.Line2D( (-ssin+cx, ssin+cx),
+                              (scos+cy, -scos+cy), *args, **kwargs)
         
         return xline, yline
         
@@ -65,6 +66,8 @@ class EllipsePatch(patches.Ellipse):
 
 
 class Ellipse(object):
+
+
 
     def __init__(self, x, y):
         
@@ -99,6 +102,7 @@ class Ellipse(object):
 
         # design matrix
         DM = SC.T*SC
+        import pdb; pdb.set_trace()
         w, v = la.eig(DM)
         w, v = self._lambda_min(w, v)
 
@@ -164,6 +168,79 @@ class Ellipse(object):
         self.fdata.eps = eps
         self.fdata.phi0 = phi0
 
+
+class EllipseGeometric(object):
+    
+    def __init__(self, x, y, p0=None):
+
+        self.x = x
+        self.y = y
+        self._p0 = p0
+        self.fit()
+        
+    def mfunc(self, p, x, y):
+            
+        phi = self.phi() - p[4]
+        # cx, cy, a, b, alpha, phi
+        xbar = p[2]*np.cos(phi)
+        ybar = p[3]*np.sin(phi)
+#        rotm = self.rotmat(p[4])
+        rotx = np.cos(p[4])*xbar - np.sin(p[4])*ybar
+        roty = np.sin(p[4])*xbar + np.cos(p[4])*ybar
+
+        print x.shape
+        print rotx.shape
+        print y.shape
+        print roty.shape
+
+#        import pdb; pdb.set_trace()
+
+       # di = np.sqrt((p[0]-x)**2 + (p[1]-y)**2) - np.sqrt(rotx**2 + roty**2)
+        di = (x - p[0])**2 + (y -p[1])**2  - (rotx**2 + roty**2)
+        return di
+
+    def func(self, p, x, y):
+
+        return (x-p[0])**2/p[2]**2 + (y-p[1])**2/p[3]**2 - 1
+
+    def chi(self, x, y):
+
+        return lambda p: self.func(p, x, y).flatten()
+
+    def xbar(self, a, b, phi):
+
+        return a*np.cos(phi)
+        
+    def rotmat(self, alpha):
+
+        return np.matrix([np.cos(alpha), -np.sin(alpha)],
+                         [np.sin(alpha), np.cos(alpha)])
+
+    def fit(self):
+    
+        efunc = self.chi(self.x, self.y)
+        p0 = self.p0
+        popt,err = leastsq(efunc, p0, full_output=False)
+#        import pdb; pdb.set_trace()
+
+        self.center = popt[:2]
+        self.a = popt[2]
+        self.b = popt[3]
+        self.phi0 = np.degrees(popt[4])
+
+    @property
+    def p0(self):
+        
+        if not self._p0:
+        #        p0 = np.append(np.array([0.0, 0.0, 111, 112, 0.0]), phi0)
+            return np.append( [0.0, 0.0, 111, 112, 0.0], self.phi)
+        else:
+            return self._p0
+#           return np.append(self._p0, self.phi())
+
+    def phi(self, x0=0.0, y0=0.0):
+        
+        return np.arctan2(self.y-y0, self.x-x0)
 
 def rotate(x, y, phi):
         
