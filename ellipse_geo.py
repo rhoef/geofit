@@ -11,6 +11,7 @@ __copyright__ = 'WTFL'
 __svn_id__ = '$Id$'
 
 from scipy.optimize import leastsq
+import numpy as np
 
 class EllipseGeometric(object):
 
@@ -55,7 +56,7 @@ class EllipseGeometric(object):
 
     def fit(self):
 
-        efunc = self.chi(self.x, self.y)
+        efunc = self.chi2(self.x, self.y)
         p0 = self.p0
         popt, err = leastsq(efunc, p0, full_output=False)
 #        import pdb; pdb.set_trace()
