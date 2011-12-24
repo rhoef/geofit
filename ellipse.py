@@ -22,6 +22,8 @@ FIELDS = ['xraw', 'yraw', 'a', 'b',
           'eps', 'center', 'nform',
           'popt', 'paxes', 'phi0']
 
+sq2 = np.sqrt(2)
+
 def pol2cat(phi, rad, deg=True):
     if deg:
         phi = np.radians(phi)
@@ -88,7 +90,7 @@ class EllipseBase(object):
     def normal_form(self):
         """Transforms an arbitrary conic equation into its normalform"""
         par = self.fdata.popt
-        A = np.matrix([[par[0], par[2]], [par[2], par[1]]])
+        A = np.matrix([[par[0], par[1]/sq2], [par[1]/sq2, par[2]]])
         val, vec = la.eig(A)
         b = np.matrix(par[3:5]).T
         t = (-1./2.*b.T*A.I).T
@@ -131,7 +133,8 @@ class Ellipse(EllipseBase):
         m = self.fdata.xraw.size
         x = self.fdata.xraw.reshape(m, 1)
         y = self.fdata.yraw.reshape(m, 1)
-        SC = np.matrix(np.hstack([x**2, y**2, 2.*x*y, x, y, np.ones((m, 1))]))
+        SC = np.matrix(np.hstack([x**2, sq2*x*y, y**2,
+                                  x, y, np.ones((m, 1))]))
         # design matrix
         DM = SC.T*SC
         w, v = la.eig(DM)
@@ -152,13 +155,12 @@ class EllipseBookstein(EllipseBase):
         self.params()
 
     def fit(self):
-        # Convenience variables
         m  = self.fdata.xraw.size
         x = self.fdata.xraw.reshape(m, 1)
         y = self.fdata.yraw.reshape(m, 1)
 
         # B *[v; w] = 0, with the constraint norm(w) == 1
-        B = np.hstack([ x, y, np.ones((m, 1)), x**2, np.sqrt(2)*x*y, y**2 ])
+        B = np.hstack([ x, y, np.ones((m, 1)), x**2, sq2*x*y, y**2 ])
 
         # To enforce the constraint, we need to take the QR decomposition
         Q, R = la.qr(B)
@@ -175,19 +177,21 @@ class EllipseBookstein(EllipseBase):
         v = np.dot(la.solve( -R11, R12 ), w)
         self.fdata.popt = np.append(w, v).flatten()
 
-    def normal_form(self):
-        """Transforms an arbitrary conic equation into its normalform"""
-        par = self.fdata.popt
-        sq = np.sqrt(2)
-        # A computes sligthly different due to the constraint
-        A = np.matrix([[par[0], par[1]/sq], [par[1]/sq, par[2]]])
-        val, vec = la.eig(A)
-        b = np.matrix(par[3:5]).T
-        t = (-1./2.*b.T*A.I).T
-        c = t.T*A*t + b.T*t + par[-1]
-        self.fdata.center = np.array(t).flatten()
-        self.fdata.nform = np.append(val, c)
-        self.fdata.paxes = vec
-        if c > 0.:
-            self.fdata.nform *= -1.0
-        return self.fdata.nform
+class EllipseTrace(EllipseBase):
+
+    def __init__(self, x, y):
+        super(EllipseTrace, self).__init__(x, y)
+        self.fit()
+        self.normal_form()
+        self.params()
+
+    def fit(self):
+        m  = self.fdata.xraw.size
+        x = self.fdata.xraw.reshape(m, 1)
+        y = self.fdata.yraw.reshape(m, 1)
+
+        # Coefficient matrix
+        B = np.hstack([ 2* x* y, y**2-x**2, x, y, np.ones((m, 1)) ])
+        B = np.matrix(B)
+        v = la.lstsq(B, -x**2)[0]
+        self.fdata.popt = np.append([1-v[1], v[0], v[1]], v[2:5])

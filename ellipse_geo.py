@@ -10,16 +10,17 @@ __author__ = 'rudolf.hoefler@gmail.com'
 __copyright__ = 'WTFL'
 __svn_id__ = '$Id$'
 
-from scipy.optimize import leastsq
+from ellipse import EllipseBase
 import numpy as np
+from scipy.optimize import leastsq
 
-class EllipseGeometric(object):
+
+class EllipseGeometric(EllipseBase):
 
     def __init__(self, x, y, p0=None):
-        self.x = x
-        self.y = y
-        self._p0 = p0
         self.fit()
+        self.normal_from()
+        self.params()
 
     def mfunc(self, p, x, y):
         phi = self.phi() - p[4]
