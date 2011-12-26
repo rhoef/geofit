@@ -191,7 +191,7 @@ class EllipseTrace(EllipseBase):
         y = self.fdata.yraw.reshape(m, 1)
 
         # Coefficient matrix
-        B = np.hstack([ 2* x* y, y**2-x**2, x, y, np.ones((m, 1)) ])
+        B = np.hstack([ sq2* x* y, y**2-x**2, x, y, np.ones((m, 1)) ])
         B = np.matrix(B)
         v = la.lstsq(B, -x**2)[0]
         self.fdata.popt = np.append([1-v[1], v[0], v[1]], v[2:5])
