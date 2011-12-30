@@ -68,10 +68,16 @@ def fit_ellipse(x, y):
     print 'a, b: %.3f, %.3f' %(el.a, el.b)
     print 'Alpha: %.3f' %el.phi0
 
-    print "Bookstein"
-    print 'Center: %.3f, %.3f' %tuple(elg.center)
-    print 'a, b: %.3f, %.3f' %(elg.a, elg.b)
-    print 'Alpha: %.3f' %elg.phi0
+    # print "Bookstein"
+    # print 'Center: %.3f, %.3f' %tuple(elg.center)
+    # print 'a, b: %.3f, %.3f' %(elg.a, elg.b)
+    # print 'Alpha: %.3f' %elg.phi0
+
+    print "Trace"
+    print 'Center: %.3f, %.3f' %tuple(elt.center)
+    print 'a, b: %.3f, %.3f' %(elt.a, elt.b)
+    print 'Alpha: %.3f' %elt.phi0
+
 
 
 def setLimits(ax):
@@ -91,7 +97,7 @@ def getAxes():
 if __name__ == '__main__':
 
     sens = 1.0
-    nmeas = 100
+    nmeas = 50
     err = randn(nmeas)*0.1
     phi = np.linspace(0, 2*np.pi, nmeas)  # angles of the channels
     r0 = ellipse_polar(phi, 4, rand(), rand()*np.pi)

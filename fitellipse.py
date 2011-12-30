@@ -104,10 +104,8 @@ def fitellipse( x, opt = 'nonlinear', **kwargs ):
     % Copyright Richard Brown, this code can be freely used and modified so
     % long as this line is retained
     '''
-    #error(nargchk(1, 5, nargin, 'struct'))
-
+    # error(nargchk(1, 5, nargin, 'struct'))
     x = asarray( x )
-
     ## Parse inputs
     # ...
     ## Default parameters
@@ -124,7 +122,6 @@ def fitellipse( x, opt = 'nonlinear', **kwargs ):
     ## centroid
     centroid = mean(x, 1)
     x        = x - centroid.reshape((2,1))
-
     ## Obtain a linear estimate
     if kwargs['constraint'] == 'bookstein':
         ## Bookstein constraint : lambda_1^2 + lambda_2^2 = 1
@@ -147,7 +144,8 @@ def fitellipse( x, opt = 'nonlinear', **kwargs ):
 
         ## Return linear estimate if GN doesn't converge
         if not fConverged:
-            print 'fitellipse:FailureToConverge', 'Gauss-Newton did not converge, returning linear estimate'
+            print ('fitellipse:FailureToConverge'
+                   'Gauss-Newton did not converge, returning linear estimate')
             z = z0
             a = a0
             b = b0
@@ -168,15 +166,8 @@ def fitbookstein(x):
     # B *[v; w] = 0, with the constraint norm(w) == 1
     B = hstack([ x1, x2, ones((m, 1)), power( x1, 2 ),
                  multiply( sqrt(2) * x1, x2 ), power( x2, 2 ) ])
-    print B.shape
-
     # To enforce the constraint, we need to take the QR decomposition
     Q, R = linalg.qr(B)
-
-    print Q.shape
-    print R.shape
-
-
     ## Decompose R into blocks
     R11 = R[0:3, 0:3]
     R12 = R[0:3, 3:6]
@@ -185,20 +176,13 @@ def fitbookstein(x):
     ## Solve R22 * w = 0 subject to norm(w) == 1
     U, S, V = linalg.svd(R22)
 
-    print U.shape
-    print S.shape
-    print V.shape
-
-
     V = V.T
     w = V[:, 2]
-
-    print w.shape
 
     # Solve for the remaining variables
 
     v = dot( linalg.solve( -R11, R12 ), w )
-    import pdb; pdb.set_trace()
+#    import pdb; pdb.set_trace()
 
     # Fill in the quadratic form
     A        = zeros((2,2))
@@ -241,7 +225,8 @@ def fitggk(x):
 
 def fitnonlinear(x, z0, a0, b0, alpha0, **params):
     '''
-    function [z, a, b, alpha, fConverged] = fitnonlinear(x, z0, a0, b0, alpha0, params)
+    function [z, a, b, alpha, fConverged] =
+    fitnonlinear(x, z0, a0, b0, alpha0, params)
     % Gauss-Newton least squares ellipse fit minimising geometric distance
     '''
 
@@ -249,18 +234,21 @@ def fitnonlinear(x, z0, a0, b0, alpha0, **params):
     Q0 = array( [[ cos(alpha0), -sin(alpha0) ], [ sin(alpha0), cos(alpha0) ]] )
     m = x.shape[1]
 
-    ## Get initial phase estimates
-    phi0 = angle( dot( dot( array([1, 1j]), Q0.T ), x - z0.reshape((2,1)) ) ).T
-    u = hstack( [ phi0, alpha0, a0, b0, z0 ] ).T
+    # Get initial phase estimates
+#    phi0 = angle( dot( dot( array([1, 1j]), Q0.T ), x - z0.reshape((2,1)) ) ).T
+
+    xi = x - z0.reshape((2,1))
+    ph = arctan2(xi[1,:], xi[0,:]) - alpha0
+    u = hstack( [ ph, alpha0, a0, b0, z0 ] ).T
 
 
     def sys(u, circTol = 1e-5):
-        '''
+        """
         function [f, J] = sys(u)
         % SYS : Define the system of nonlinear equations and Jacobian. Nested
         % function accesses X (but changeth it not)
         % from the FITELLIPSE workspace
-        '''
+        """
 
         ## Unpack parameters from u
         phi   = u[:-5]
@@ -274,31 +262,31 @@ def fitnonlinear(x, z0, a0, b0, alpha0, **params):
         ## TODO: This can be fixed by switching to a Levenberg-Marquardt
         ## solver
         if abs(a - b) / (a + b) < circTol:
-            print 'fitellipse:CircleFound', 'Ellipse is near-circular - nonlinear fit may not succeed'
+            print ('fitellipse:CircleFound'
+                   'Ellipse is near-circular - nonlinear fit may not succeed')
 
-        ## Convenience trig variables
+        # Convenience trig variables
         c = cos(phi)
         s = sin(phi)
         ca = cos(alpha)
         sa = sin(alpha)
 
-        ## Rotation matrices
+        # Rotation matrices
         Q    = array( [[ca, -sa], [sa, ca]] )
         Qdot = array( [[-sa, -ca], [ca, -sa]] )
 
-        ## Preallocate function and Jacobian variables
-        f = zeros(2 * m)
+        # Preallocate function and Jacobian variables
+        f = vstack((x[0, :] - z[0] - (a*ca*c - b*sa*s),
+                    x[1, :] - z[1] - (a*sa*c + b*ca*s))).T.flatten()
         J = zeros((2 * m, m + 5))
         for i in range( m ):
             rows = range( (2*i), (2*i)+2 )
-            ## Equation system - vector difference between point on ellipse
-            ## and data point
-            f[ rows ] = x[:, i] - z - dot( Q, array([ a * cos(phi[i]), b * sin(phi[i]) ]) )
-
-            ## Jacobian
+            # Jacobian
             J[ rows, i ] = dot( -Q, array([ -a * s[i], b * c[i] ]) )
             J[ rows, -5: ] = \
                 hstack([ ascol( dot( -Qdot, array([ a * c[i], b * s[i] ]) ) ), ascol( dot( -Q, array([ c[i], 0 ]) ) ), ascol( dot( -Q, array([ 0, s[i] ]) ) ), array([[-1, 0],[0, -1]]) ])
+
+        import pdb; pdb.set_trace()
 
         return f,J
 
@@ -481,12 +469,13 @@ def test_main():
     '''
 
 def test2():
-    matlab_pts = '[ -0.114374090767  -0.044  ;  -0.125082007641  0.0265859306118  ;  -0.156045389318  0.0895227803882  ;  -0.203908872948  0.13799036509  ;  -0.2634857074  0.166736469863  ;  -0.328319818233  0.172646008213  ;  -0.391385423532  0.155078589964  ;  -0.445848386399  0.11593791747  ;  -0.485806799728  0.0594654899254  ;  -0.506930549417  -0.00821902888511  ;  -0.506930549417  -0.0797809711149  ;  -0.485806799728  -0.147465489925  ;  -0.445848386399  -0.20393791747  ;  -0.391385423532  -0.243078589964  ;  -0.328319818233  -0.260646008213  ;  -0.2634857074  -0.254736469863  ;  -0.203908872948  -0.22599036509  ;  -0.156045389318  -0.177522780388  ;  -0.125082007641  -0.114585930612 ]'
+    matlab_pts = '[ -0.114374090767  -0.0  ;  -0.125082007641  0.0265859306118  ;  -0.156045389318  0.0895227803882  ;  -0.203908872948  0.13799036509  ;  -0.2634857074  0.166736469863  ;  -0.328319818233  0.172646008213  ;  -0.391385423532  0.155078589964  ;  -0.445848386399  0.11593791747  ;  -0.485806799728  0.0594654899254  ;  -0.506930549417  -0.00821902888511  ;  -0.506930549417  -0.0797809711149  ;  -0.485806799728  -0.147465489925  ;  -0.445848386399  -0.20393791747  ;  -0.391385423532  -0.243078589964  ;  -0.328319818233  -0.260646008213  ;  -0.2634857074  -0.254736469863  ;  -0.203908872948  -0.22599036509  ;  -0.156045389318  -0.177522780388  ;  -0.125082007641  -0.114585930612 ]'
     x = asarray( mat( matlab_pts.strip('[]') ) )
     from pprint import pprint
-    pprint( fitellipse(x, 'linear', constraint = 'bookstein') )
-    pprint( fitellipse(x, 'linear', constraint = 'trace') )
-    pprint( fitellipse(x, 'nonlinear') )
+#    pprint( fitellipse(x, 'linear', constraint = 'bookstein') )
+#    pprint( fitellipse(x, 'linear', constraint = 'trace') )
+    fn =  fitellipse(x, 'nonlinear')
+    pprint(fn)
 
 def main():
    #test_main()

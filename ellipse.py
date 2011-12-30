@@ -32,6 +32,15 @@ def pol2cat(phi, rad, deg=True):
 def ellipse_polar(phi, b, e, t):
     return  b/np.sqrt(1-(e*np.cos(phi-t))**2)
 
+def rotmat(phi, inverse=False):
+    if inverse:
+        return np.matrix([[cos(phi),  sin(phi)],
+                          [-sin(phi), cos(phi)]])
+    else:
+        return np.matrix([[cos(phi), -sin(phi)],
+                          [sin(phi), cos(phi)]])
+
+
 class EllipsePatch(patches.Ellipse):
 
     def __init__(self, xy, width, height, angle=0.0, **kwargs):

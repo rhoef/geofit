@@ -11,72 +11,97 @@ __copyright__ = 'WTFL'
 __svn_id__ = '$Id$'
 
 from ellipse import EllipseBase
+from ellipse import rotmat
 import numpy as np
 from scipy.optimize import leastsq
 
 
 class EllipseGeometric(EllipseBase):
 
-    def __init__(self, x, y, p0=None):
-        self.fit()
-        self.normal_from()
-        self.params()
+    def __init__(self, x, y, p0):
+        super(EllipseGeometric, self).__init__(x, y)
+        self.params = {"circ_tol": 1e-5,
+                       "max_iterations": 666,
+                       "converged": False}
+        self.fit(p0)
+#        self.params()
 
-    def mfunc(self, p, x, y):
-        phi = self.phi() - p[4]
-        # cx, cy, a, b, alpha, phi
-        xbar = p[2]*np.cos(phi)
-        ybar = p[3]*np.sin(phi)
-#        rotm = self.rotmat(p[4])
-        rotx = np.cos(p[4])*xbar - np.sin(p[4])*ybar
-        roty = np.sin(p[4])*xbar + np.cos(p[4])*ybar
+    def normal_form(self):
+        raise NotImplementError("The parameter fit does"
+                                "not have an algebraic normal form")
 
-        print x.shape
-        print rotx.shape
-        print y.shape
-        print roty.shape
+    def sys(self, x, y, u, m):
+        z = u[:2]
+        a = u[2]
+        b = u[3]
+        alpha = u[4]
+        phi = u[5:]
 
-#        import pdb; pdb.set_trace()
+        # Convenience trig variables
+        c = np.cos(phi)
+        s = np.sin(phi)
+        ca = np.cos(alpha)
+        sa = np.sin(alpha)
 
-       # di = np.sqrt((p[0]-x)**2 + (p[1]-y)**2) - np.sqrt(rotx**2 + roty**2)
-        di = (x - p[0])**2 + (y -p[1])**2  - (rotx**2 + roty**2)
-        return di
+        # Rotation matrices
+        Q    = np.array( [[ca, -sa], [sa, ca]] )
+        Qdot = np.array( [[-sa, -ca], [ca, -sa]] )
 
-    def func(self, p, x, y):
-        return (x-p[0])**2/p[2]**2 + (y-p[1])**2/p[3]**2 - 1
 
-    def chi2(self, x, y):
-        return lambda p: self.func(p, x, y).flatten()
+        f = np.vstack((x[0, :] - z[0] - (a*ca*c - b*sa*s),
+                       x[1, :] - z[1] - (a*sa*c + b*ca*s))).T.flatten()
 
-    def xbar(self, a, b, phi):
-        return a*np.cos(phi)
+        ones = np.ones((m, 1))
+        zeros = np.zeros((m, 1))
+        J = np.hstack((-ones, zeros,
+                        zeros, ones,
+                        -(ca*c).reshape((m, 1)), -(sa*c).reshape((m, 1)),
+                        (sa*s).reshape((m, 1)), -(ca*s).reshape((m, 1)),
+                        (a*sa*c+ b*ca*s).reshape((m, 1)),
+                        (-a*ca*c+b*sa*s).reshape((m, 1)),
+                        np.zeros((m, 2*m))
+                        ))
+        for i in range(m):
+            J[i, 2*i+5] = a*ca*s[i] + b*sa*c[i]
+            J[i, 2*i+6] = a*sa*s[i] - b*ca*c[i]
+        import pdb; pdb.set_trace()
+        return f, J
 
-    def rotmat(self, alpha):
-        return np.matrix([np.cos(alpha), -np.sin(alpha)],
-                         [np.sin(alpha), np.cos(alpha)])
+    def _check_radius(self, a, b):
+        if abs(a-b)/(a+b) < self.params["circ_tol"]:
+            msg = "Ellipse is near-circular - nonlinear fit may not succeed"
+            raise RuntimeError()
 
-    def fit(self):
+    def estimate_p0(self, x, y, p0):
+        # p0 = (centerx, centery, a, b, phi)
+        psi = np.arctan2(y-p0[1], x-p0[0]) - p0[4]
+        return np.hstack([p0, psi.flatten()]).T
 
-        efunc = self.chi2(self.x, self.y)
-        p0 = self.p0
-        popt, err = leastsq(efunc, p0, full_output=False)
-#        import pdb; pdb.set_trace()
+    def fit(self, p0):
+        m  = self.fdata.xraw.size
+        x = self.fdata.xraw.reshape(m, 1)
+        y = self.fdata.yraw.reshape(m, 1)
+        u = self.estimate_p0(x, y, p0)
 
-        self.center = popt[:2]
-        self.a = popt[2]
-        self.b = popt[3]
-        self.phi0 = np.degrees(popt[4])
+        # Iterate using Gauss Newton
+        for nIts in range( self.params['max_iterations'] ):
+            # Find the function and Jacobian
+            f, J = self.sys(x, y, u, m)
+            # Solve for the step and update u
+            # h = linalg.solve( -J, f )
+            h = np.linalg.lstsq( -J, f ) [0]
+            u = u + h
 
-    @property
-    def p0(self):
+            # Check for convergence
+            delta = np.linalg.norm(h, inf)/np.linalg.norm(u, inf)
+            if delta < params['tol']:
+                converged = True
+                break
 
-        if not self._p0:
-        #        p0 = np.append(np.array([0.0, 0.0, 111, 112, 0.0]), phi0)
-            return np.append( [0.0, 0.0, 111, 112, 0.0], self.phi)
-        else:
-            return self._p0
-#           return np.append(self._p0, self.phi())
-
-    def phi(self, x0=0.0, y0=0.0):
-
-        return np.arctan2(self.y-y0, self.x-x0)
+        # alpha = u[-5]
+        # a     = u[-4]
+        # b     = u[-3]
+        # z     = u[-2:]
+        self.pfinal = u
+        # return  (centerX, centerY, a, b, phi)
+        return tuple(u[:5]) + (converged, )
