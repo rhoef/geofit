@@ -17,10 +17,6 @@ and geometric distance (nonlinear least squares).'
 from math import *
 from numpy import *
 
-def flatzip(x, y):
-    zipped = array(zip(x, y))
-    return zipped.flatten()
-
 def ascol( arr ):
     '''
     If the dimensionality of 'arr' is 1, reshapes it to be a column matrix (N,1).
@@ -284,48 +280,25 @@ def fitnonlinear(x, z0, a0, b0, alpha0, **params):
         sa = sin(alpha)
 
         ## Rotation matrices
-        # Q    = array( [[ca, -sa],[sa, ca]] )
-        # Qdot = array( [[-sa, -ca],[ca, -sa]] )
+        Q    = array( [[ca, -sa],[sa, ca]] )
+        Qdot = array( [[-sa, -ca],[ca, -sa]] )
 
         ## Preallocate function and Jacobian variables
-#        f = zeros(2 * m)
-        # Preallocate function and Jacobian variables
-        f = vstack((x[0, :] - z[0] - (a*ca*c - b*sa*s),
-                    x[1, :] - z[1] - (a*sa*c + b*ca*s))).T.flatten()
+        f = zeros(2 * m)
+        J = zeros((2 * m, m + 5))
+        for i in range( m ):
+            rows = range( (2*i), (2*i)+2 )
+            ## Equation system - vector difference between point on ellipse
+            ## and data point
+            f[ rows ] = x[:, i] - z - dot( Q, array([ a * cos(phi[i]), b * sin(phi[i]) ]) )
 
-#        J = zeros((2 * m, m + 5))
-#         for i in range( m ):
-#             rows = range( (2*i), (2*i)+2 )
-#             ## Equation system - vector difference between point on ellipse
-#             ## and data point
-# #            f[ rows ] = x[:, i] - z - dot( Q, array([ a * cos(phi[i]), b * sin(phi[i]) ]) )
+            ## Jacobian
+            J[ rows, i ] = dot( -Q, array([ -a * s[i], b * c[i] ]) )
+            J[ rows, -5: ] = \
+                hstack([ ascol( dot( -Qdot, array([ a * c[i], b * s[i] ]) ) ), ascol( dot( -Q, array([ c[i], 0 ]) ) ), ascol( dot( -Q, array([ 0, s[i] ]) ) ), array([[-1, 0],[0, -1]]) ])
 
-#             ## Jacobian
-#             J[ rows, i ] = dot( -Q, array([ -a * s[i], b * c[i] ]) )           # dg/dphi
-#             J[ rows, -5: ] = \
-#                 hstack([ ascol( dot( -Qdot, array([ a * c[i], b * s[i] ]) ) ), # dg/dalpha
-#                          ascol( dot( -Q, array([ c[i], 0 ]) ) ),               # dg/da
-#                          ascol( dot( -Q, array([ 0, s[i] ]) ) ),               # dg/db
-#                          array([[-1, 0],[0, -1]]) ])                           # dg/dz
+        return f,J
 
-
-        # custom
-        J = hstack((zeros((2*m, m)),
-                    flatzip(a*sa*c+ b*ca*s, -a*ca*c+b*sa*s).reshape(2*m, -1),
-                    # vstack((a*sa*c+ b*ca*s, -a*ca*c+b*sa*s)).T.flatten(),
-                    flatzip(-ca*c, -sa*c).reshape(2*m, -1),
-                    # vstack((-ca*c, -sa*c)).T.flatten(),
-                    flatzip(sa*s, -ca*s).reshape(2*m, -1),
-                    # vstack((sa*s, -ca*s)).T.flatten(),
-                    flatzip(-ones(m), zeros(m)).reshape(2*m, -1),
-                    flatzip(zeros(m), -ones(m)).reshape(2*m, -1),
-                    # m*[-1, 0],
-                    # m*[0, -1]
-                    ))
-        for i in range(m):
-            J[2*i, i] = a*ca*s[i] + b*sa*c[i]
-            J[2*i+1, i] = a*sa*s[i] - b*ca*c[i]
-        return f, J
 
     ## Iterate using Gauss Newton
     fConverged = False
@@ -516,5 +489,4 @@ def main():
     #test_main()
     test2()
 
-if __name__ == '__main__':
-    main()
+if __name__ == '__main__': main()
