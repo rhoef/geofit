@@ -11,7 +11,6 @@ __copyright__ = 'WTFL'
 __svn_id__ = '$Id$'
 
 from ellipse import EllipseBase
-from ellipse import rotmat
 import numpy as np
 from scipy.optimize import leastsq
 
@@ -19,10 +18,10 @@ def flatzip(x, y):
     zipped = np.array(zip(x, y))
     return zipped.flatten()
 
-class EllipseGeometric(EllipseBase):
+class EllipseGaussNewton(EllipseBase):
 
     def __init__(self, x, y, p0):
-        super(EllipseGeometric, self).__init__(x, y)
+        super(EllipseGaussNewton, self).__init__(x, y)
         self.properties = {"circ_tol": 1e-5,
                            "max_iterations": 666,
                            "converged": False,
@@ -31,7 +30,7 @@ class EllipseGeometric(EllipseBase):
         self.params()
 
     def normal_form(self):
-        raise NotImplementError("The parameter fit does"
+        raise NotImplementedError("The parameter fit does"
                                 "not have an algebraic normal form")
 
     def sys(self, x, y, u, m):
@@ -51,7 +50,6 @@ class EllipseGeometric(EllipseBase):
         f = flatzip(x.flatten() - z[0] - (a*ca*c - b*sa*s),
                     y.flatten() - z[1] - (a*sa*c + b*ca*s))
         # Jacobian
-
         J0 = np.zeros((2*m, m))
         for i in range(m):
             J0[2*i, i] = a*ca*s[i] + b*sa*c[i]
@@ -84,21 +82,15 @@ class EllipseGeometric(EllipseBase):
 
         # Iterate using Gauss Newton
         for nIts in range( self.properties['max_iterations'] ):
-            print nIts
-            # Find the function and Jacobian
             f, J = self.sys(x, y, u, m)
-            # Solve for the step and update u
-            # h = linalg.solve( -J, f )
             h = np.linalg.lstsq( -J, f ) [0]
             u = u + h
-
             # Check for convergence
             delta = np.linalg.norm(h, np.inf)/np.linalg.norm(u, np.inf)
             if delta < self.properties['tol']:
                 converged = True
                 break
         self.pfinal = u
-        # return  (centerX, centerY, a, b, phi)
         return tuple(u[:5]) + (converged, )
 
     def params(self):
@@ -111,3 +103,50 @@ class EllipseGeometric(EllipseBase):
         else:
             eps = np.sqrt(1.0-(self.fdata.a/self.fdata.b)**2)
         self.fdata.eps = eps
+
+
+class EllipseLevenberg(EllipseGaussNewton):
+
+    def sys(self, u, x, y):
+        # Convenience trig variables
+        ca = np.cos(u[4])
+        sa = np.sin(u[4])
+        c = np.cos(u[5:])
+        s = np.sin(u[5:])
+        # function values (x0, y0, x1, y1, ....)
+        f = flatzip(x.flatten() - u[0] - (u[2]*ca*c - u[3]*sa*s),
+                    y.flatten() - u[1] - (u[2]*sa*c + u[3]*ca*s))
+        return f
+
+    def chi(self, x, y):
+        return lambda p: self.sys(p, x, y)
+
+    def jacobian(self, u, x, y):
+        m = x.size
+        c = np.cos(u[5:]) # cos(phi)
+        s = np.sin(u[5:]) # sin(phi)
+        ca = np.cos(u[4]) # cos(alpha)
+        sa = np.sin(u[4]) # sin(alpha)
+
+        J0 = np.zeros((2*m, m))
+        for i in range(m):
+            J0[2*i, i] = u[2]*ca*s[i] + u[3]*sa*c[i]
+            J0[2*i+1, i] = u[2]*sa*s[i] - u[3]*ca*c[i]
+        J = np.hstack((flatzip(-np.ones(m), np.zeros(m)).reshape(2*m, -1),
+                       flatzip(np.zeros(m), -np.ones(m)).reshape(2*m, -1),
+                       flatzip(-ca*c, -sa*c).reshape(2*m, -1),
+                       flatzip(sa*s, -ca*s).reshape(2*m, -1),
+                       flatzip(u[2]*sa*c+ u[3]*ca*s,
+                               -u[2]*ca*c+u[3]*sa*s).reshape(2*m, -1),
+                       J0 ))
+        return J
+
+    def fit(self, p0):
+        m  = self.fdata.xraw.size
+        x = self.fdata.xraw.reshape(m, 1)
+        y = self.fdata.yraw.reshape(m, 1)
+        u = self.estimate_p0(x, y, p0)
+        efunc = self.chi(x, y)
+        jac = lambda p: self.jacobian(p, x, y)
+        self.pfinal, err = leastsq(efunc, u, Dfun=jac)
+        return tuple(u[:5]) + (err, )

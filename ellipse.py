@@ -15,8 +15,6 @@ import numpy.linalg as la
 from collections import namedtuple
 from matplotlib import patches
 from matplotlib import lines
-from matplotlib.pyplot import arrow
-from scipy.optimize import leastsq
 
 FIELDS = ['xraw', 'yraw', 'a', 'b',
           'eps', 'center', 'nform',
@@ -31,14 +29,6 @@ def pol2cat(phi, rad, deg=True):
 
 def ellipse_polar(phi, b, e, t):
     return  b/np.sqrt(1-(e*np.cos(phi-t))**2)
-
-def rotmat(phi, inverse=False):
-    if inverse:
-        return np.matrix([[cos(phi),  sin(phi)],
-                          [-sin(phi), cos(phi)]])
-    else:
-        return np.matrix([[cos(phi), -sin(phi)],
-                          [sin(phi), cos(phi)]])
 
 
 class EllipsePatch(patches.Ellipse):
