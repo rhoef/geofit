@@ -94,7 +94,7 @@ def setLimits(ax):
     ax.set_xlim(ax.get_ylim())
 
 def getAxes():
-    fig = figure(figsize=(12, 8))
+    fig = figure(figsize=(10, 6))
     ax = fig.add_subplot(111, aspect='equal')
     ax.axhline(y=0.0, color='k')
     ax.axvline(x=0.0, color='k')
