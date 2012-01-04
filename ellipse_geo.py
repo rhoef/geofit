@@ -33,7 +33,7 @@ class EllipseGaussNewton(EllipseBase):
         raise NotImplementedError("The parameter fit does"
                                 "not have an algebraic normal form")
 
-    def sys(self, x, y, u, m):
+    def parfunc(self, x, y, u, m):
         z = u[:2]
         a = u[2]
         b = u[3]
@@ -82,7 +82,7 @@ class EllipseGaussNewton(EllipseBase):
 
         # Iterate using Gauss Newton
         for nIts in range( self.properties['max_iterations'] ):
-            f, J = self.sys(x, y, u, m)
+            f, J = self.parfunc(x, y, u, m)
             h = np.linalg.lstsq( -J, f ) [0]
             u = u + h
             # Check for convergence
@@ -107,7 +107,7 @@ class EllipseGaussNewton(EllipseBase):
 
 class EllipseLevenberg(EllipseGaussNewton):
 
-    def sys(self, u, x, y):
+    def parfunc(self, u, x, y):
         # Convenience trig variables
         ca = np.cos(u[4])
         sa = np.sin(u[4])
@@ -119,7 +119,7 @@ class EllipseLevenberg(EllipseGaussNewton):
         return f
 
     def chi(self, x, y):
-        return lambda p: self.sys(p, x, y)
+        return lambda p: self.parfunc(p, x, y)
 
     def jacobian(self, u, x, y):
         m = x.size
