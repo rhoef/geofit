@@ -1,21 +1,29 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
+"""
+scatter.py
+
+Fit an ellipse using different methods
+"""
+
+__author__ = 'rudolf.hoefler@gmail.com'
+__copyright__ = 'WTFL'
+__svn_id__ = '$Id$'
+
 
 from matplotlib import use
 use("GtkAgg")
 
 import numpy as np
-import pylab as pl
 from numpy.random import randn, rand
-from matplotlib.pyplot import figure, show, draw, gca
-
-from numpy import linalg as LA
-from matplotlib.patches import Circle
+from matplotlib.pyplot import figure
+from matplotlib.pyplot import show
 
 from ellipse import Ellipse
 from ellipse import EllipseBookstein
 from ellipse import EllipseTrace
-from ellipse_geo import EllipseLevenberg
-from ellipse_geo import EllipseGaussNewton
+from ellipse import EllipseLevenberg
+#from ellipse import EllipseGaussNewton
 from ellipse import EllipsePatch
 from ellipse import ellipse_polar
 from ellipse import pol2cat
@@ -24,6 +32,13 @@ from matplotlib.font_manager import FontProperties
 fprops =  FontProperties(size="small")
 
 def fit_ellipse(x, y):
+    """Compare different fit routines
+
+    1) Ellipse
+    2) EllipseBookstein
+    3) EllipseTrace
+    4) EllipseLevenberg
+    """
 
     # fit raw data
     el  = Ellipse(x, y)
@@ -50,7 +65,7 @@ def fit_ellipse(x, y):
                           angle=np.degrees(ell.phi0), fill=False, color='c',
                           lw=1, label="Levenberg")
 
-    fig, ax = getAxes()
+    fig, ax = figAxes()
     ax.plot(x, y, 'bo')
     ax.add_artist(el_hl1)
     ax.add_artist(el_book)
@@ -62,6 +77,7 @@ def fit_ellipse(x, y):
     ax.add_artist(xline)
     ax.add_artist(yline)
 
+
     leg = ax.legend((el_raw, el_hl1, el_trace, el_book, el_lev),
                     ("No Constraint ", "No Constraint rotated",
                      "Trace", "Bookstein", "Levenberg"),
@@ -72,7 +88,7 @@ def fit_ellipse(x, y):
     leg.draggable(True, use_blit=True)
     leg.get_frame().set_alpha(0.9)
     fig.text(0.05, 0.40, el_lev.text(), fontsize=11)
-    setLimits(ax)
+    limits(ax)
 
     print_params("No Constraint", el)
     print_params("Trace", elt)
@@ -88,12 +104,12 @@ def print_params(title, el):
     print ' Alpha: %8.3f' %el.phi0
     print '   Eps: %8.3f' %el.eps
 
-def setLimits(ax):
+def limits(ax):
     lmax = max(list(ax.get_xlim())+list(ax.get_ylim()))
     ax.set_ylim((-lmax, lmax))
     ax.set_xlim(ax.get_ylim())
 
-def getAxes():
+def figAxes():
     fig = figure(figsize=(10, 6))
     ax = fig.add_subplot(111, aspect='equal')
     ax.axhline(y=0.0, color='k')
