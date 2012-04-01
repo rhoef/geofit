@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 """
-scatter.py
+demo_ellipse.py
 
 Fit an ellipse using different methods
 """
@@ -11,8 +11,7 @@ __copyright__ = 'WTFL'
 __svn_id__ = '$Id$'
 
 from matplotlib import use
-use("GtkAgg")
-
+use("GtkAgg", warn=False)
 
 import numpy as np
 from numpy.random import randn, rand

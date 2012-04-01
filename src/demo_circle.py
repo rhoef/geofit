@@ -1,6 +1,7 @@
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
 """
-scatter_circ.py
+demo_circle.py
 
 Fit an ellipse using different methods.
 """
@@ -9,7 +10,7 @@ __author__ = 'rudolf.hoefler@gmail.com'
 __copyright__ = 'WTFL'
 
 from matplotlib import use
-use("GtkAgg")
+use("GtkAgg", warn=False)
 
 import numpy as np
 from numpy.random import randn
@@ -46,9 +47,10 @@ def fit_circle(x, y):
     # mpl figure
     fig, ax = figAxes()
     ax.plot(x, y, 'bo')
-#    import pdb; pdb.set_trace()
     ax.add_artist(circ_alg)
     ax.add_artist(circ_geo)
+    ax.axvline(geo.center[0], ls='--', color='k')
+    ax.axhline(geo.center[1], ls='--', color='k')
 
     leg = ax.legend((circ_alg, circ_geo),
                     ("Algebraic fit", "Levenberg-Marquardt"),
@@ -96,5 +98,5 @@ if __name__ == "__main__":
         phi = np.linspace(0, 2*np.pi, args.points)  # angles of the channels
         x, y = pol2cat(phi, args.radius+err, deg=False)
 
-    fit_circle(x-args.x, y-args.y)
+    fit_circle(x+args.x, y+args.y)
     show()
