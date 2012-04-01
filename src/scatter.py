@@ -10,9 +10,9 @@ __author__ = 'rudolf.hoefler@gmail.com'
 __copyright__ = 'WTFL'
 __svn_id__ = '$Id$'
 
-
 from matplotlib import use
 use("GtkAgg")
+
 
 import numpy as np
 from numpy.random import randn, rand
@@ -119,6 +119,7 @@ def figAxes():
 
 if __name__ == '__main__':
     import argparse
+
     parser = argparse.ArgumentParser(description=
                                      'Fit and plot ellipses from 2d data')
     parser.add_argument('-f', '--file', dest="file",

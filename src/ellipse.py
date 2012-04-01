@@ -90,7 +90,6 @@ class EllipsePatch(patches.Ellipse):
         return eps
 
 class EllipseBase(object):
-    """all ellipse fit classes should be childs of EllipseBase"""
 
     def __init__(self, x, y):
         """x and y is the raw data to fit"""
@@ -336,7 +335,7 @@ class EllipseGaussNewton(EllipseBase):
 
 
 class EllipseLevenberg(EllipseGaussNewton):
-    """Geometric fit (best fit) using the Levenberg-Marquard algorithm"""
+    """Geometric fit ("best fit") using the Levenberg-Marquard algorithm"""
 
     def parfunc(self, p, x, y):
         """Returns f(x, y, p), the function values."""
@@ -384,4 +383,4 @@ class EllipseLevenberg(EllipseGaussNewton):
         efunc = self.chi(x, y)
         jac = lambda p: self.jacobian(p, x, y)
         self.pfinal, err = leastsq(efunc, u, Dfun=jac)
-        return tuple(u[:5]) + (err, )
+        return tuple(self.pfinal[:5]) + (err, )

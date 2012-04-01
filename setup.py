@@ -7,7 +7,7 @@ Distutils setup script for ellipse_fit
 
 __author__ = 'rudolf.hoefler@gmail.com'
 __copyright__ = 'WTFL'
-__revision__ = '$Revsion-Id$'
+
 
 import os
 import sys
