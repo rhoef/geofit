@@ -17,9 +17,9 @@ from numpy.random import randn
 from matplotlib.pyplot import show
 
 from ellipse import pol2cat
-from scatter import figAxes
-from scatter import limits
-from scatter import fprops
+from demo_ellipse import figAxes
+from demo_ellipse import limits
+from demo_ellipse import fprops
 from circle import CircleAlgebraic
 from circle import CircleLevenberg
 from circle import CirclePatch

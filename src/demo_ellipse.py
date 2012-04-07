@@ -139,6 +139,6 @@ if __name__ == '__main__':
         r0 = ellipse_polar(phi, 4, rand(), rand()*np.pi)
         x, y = pol2cat(phi, r0+err, deg=False)
 
-    el = fit_ellipse(x, y)
+    fit_ellipse(x, y)
     show()
 

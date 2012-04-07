@@ -47,11 +47,19 @@ class CircleBase(object):
                 'cx: %.3f\n'
                 'cy: %.3f\n'
                 'r: %.3f\n'
-                %(self.center[0],
-                  self.center[1],
-                  self.radius))
+                %(self.center[0], self.center[1], self.radius))
 
 class CircleAlgebraic(CircleBase):
+    """Algebraic fit cartesian data to a circle
+
+    Access the data and fit parameters:
+    >>>circle = CircleAlgebraic(x, y)
+    >>>c = circle.center
+    >>>r = circle.radius
+
+    Constants of the algebraic equation are stored in
+    >>>circle.popts
+    """
 
     def __init__(self, x, y):
         super(CircleAlgebraic, self).__init__(x, y)
@@ -86,6 +94,7 @@ class CircleAlgebraic(CircleBase):
         self.fdata.center = np.array([-b[0]/(2*a), -b[1]/(2*a)])
 
 class CircleLevenberg(CircleAlgebraic):
+    """Fit cartesian data to an cirlce using the Levenberg-Marquardt"""
 
     def __init__(self, x, y, p0):
         super(CircleAlgebraic, self).__init__(x, y)
@@ -96,13 +105,14 @@ class CircleLevenberg(CircleAlgebraic):
     def lambda_min(self):
         raise NotImplementedError
 
-    def parfunc(self, p, x, y):
+    def func(self, p, x, y):
         return  (np.sqrt((x-p[0])**2 + (y-p[1])**2) - p[2]).flatten()
 
     def chi(self, x, y):
-        return lambda p: self.parfunc(p, x, y)
+        return lambda p: self.func(p, x, y)
 
     def jacobian(self, p, x, y):
+        """Jacobian of the circle equation"""
         m = x.size
         denom = np.sqrt((p[0]-x)**2 + (p[1]-y)**2)
         J = np.hstack([(p[0]-x)/denom, (p[1]-y)/denom, -np.ones((m, 1))])
@@ -113,7 +123,6 @@ class CircleLevenberg(CircleAlgebraic):
         self.fdata.radius = self.fdata.popt[2]
 
     def fit(self):
-        """Fit the data"""
         m  = self.fdata.xraw.size
         x = self.fdata.xraw.reshape(m, 1)
         y = self.fdata.yraw.reshape(m, 1)
