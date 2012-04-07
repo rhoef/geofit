@@ -25,7 +25,7 @@ class CirclePatch(patches.Circle):
 class CircleBase(object):
 
     def __init__(self, x, y):
-        """x and y is the raw data to fit"""
+        """x and y is the raw data to fit."""
         self.fdata = namedtuple('fdata', FIELDS )
         self.fdata.xraw = x
         self.fdata.yraw = y
