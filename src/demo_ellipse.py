@@ -10,9 +10,6 @@ __author__ = 'rudolf.hoefler@gmail.com'
 __copyright__ = 'WTFL'
 __svn_id__ = '$Id$'
 
-from matplotlib import use
-use("GtkAgg", warn=False)
-
 import numpy as np
 from numpy.random import randn, rand
 from matplotlib.pyplot import figure
