@@ -90,7 +90,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.file:
-        data= np.loadtxt(args.file, delimiter=',')
+        data = np.loadtxt(args.file, delimiter=',')
         x = data[1:, 0] - data[0, 0]
         y = data[1:, 1] - data[0, 1]
     else:
