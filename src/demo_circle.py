@@ -9,8 +9,6 @@ Fit an ellipse using different methods.
 __author__ = 'rudolf.hoefler@gmail.com'
 __copyright__ = 'WTFL'
 
-from matplotlib import use
-use("GtkAgg", warn=False)
 
 import numpy as np
 from numpy.random import randn
