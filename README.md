@@ -21,5 +21,5 @@ Use the setup.py for installation
 
 #### Run
 
-Simply run the ```demo_cirlce.py``` and ```demo_ellipse.py``` to get started.
+Run ```demo_cirlce.py``` and ```demo_ellipse.py``` to get started.
 Use the ```-h``` option for help
